@@ -61,17 +61,46 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  postgres:
+  postgres-payments:
     image: postgres:14-alpine
     environment:
       - POSTGRES_USER=rhribeiro25
       - POSTGRES_PASSWORD=alura
+      - POSTGRES_DB=alurafood-payments
     ports:
       - 5432:5432
     expose:
       - 5432
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - postgres-payments:/var/lib/postgresql/data
+
+  postgres-orders:
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_USER=rhribeiro25
+      - POSTGRES_PASSWORD=alura
+      - POSTGRES_DB=alurafood-orders
+    ports:
+      - 6432:5432
+    expose:
+      - 6432
+    volumes:
+      - postgres-orders:/var/lib/postgresql/data
+
+  postgres-transactions:
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_USER=rhribeiro25
+      - POSTGRES_PASSWORD=alura
+      - POSTGRES_DB=alurafood-transactions
+    ports:
+      - 7432:5432
+    expose:
+      - 7432
+    volumes:
+      - postgres-transactions:/var/lib/postgresql/data
 
 volumes:
-  postgres:
+  postgres-payments:
+  postgres-orders:
+  postgres-transactions:
