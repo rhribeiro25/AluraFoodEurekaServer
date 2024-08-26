@@ -100,7 +100,21 @@ services:
     volumes:
       - postgres-promotions:/var/lib/postgresql/data
 
+  postgres-evaluations:
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_USER=rhribeiro25
+      - POSTGRES_PASSWORD=alura
+      - POSTGRES_DB=alurafood-evaluations
+    ports:
+      - 7432:5432
+    expose:
+      - 7432
+    volumes:
+      - postgres-evaluations:/var/lib/postgresql/data
+
 volumes:
   postgres-payments:
   postgres-orders:
-  postgres-transactions:
+  postgres-promotions:
+  postgres-evaluations:
