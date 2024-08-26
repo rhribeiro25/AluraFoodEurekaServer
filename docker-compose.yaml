@@ -107,9 +107,9 @@ services:
       - POSTGRES_PASSWORD=alura
       - POSTGRES_DB=alurafood-evaluations
     ports:
-      - 7432:5432
+      - 8432:5432
     expose:
-      - 7432
+      - 8432
     volumes:
       - postgres-evaluations:/var/lib/postgresql/data
 
