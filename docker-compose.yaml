@@ -87,18 +87,18 @@ services:
     volumes:
       - postgres-orders:/var/lib/postgresql/data
 
-  postgres-transactions:
+  postgres-promotions:
     image: postgres:14-alpine
     environment:
       - POSTGRES_USER=rhribeiro25
       - POSTGRES_PASSWORD=alura
-      - POSTGRES_DB=alurafood-transactions
+      - POSTGRES_DB=alurafood-promotions
     ports:
       - 7432:5432
     expose:
       - 7432
     volumes:
-      - postgres-transactions:/var/lib/postgresql/data
+      - postgres-promotions:/var/lib/postgresql/data
 
 volumes:
   postgres-payments:
