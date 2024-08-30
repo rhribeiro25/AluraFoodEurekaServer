@@ -1,0 +1,74 @@
+@startuml
+
+actor customer as user
+participant "order.js" as orderForm <<Controller for order form>>
+participant "payment.js" as paymentForm <<Controller for payment form>>
+participant "OrderService.java" as orderService <<(C,#ADD1B2) Orders services>>
+participant "PaymentsRabbitListener.java" as paymentsRabbitListenerOrder <<(C,#ADD1B2) Orders services>>
+participant "PaymentsRabbitListener.java" as paymentsRabbitListenerEvaluation <<(C,#ADD1B2) Orders services>>
+participant "PaymentService.java" as paymentService <<(C,#ADD1B2) Payment services>>
+participant "PaymentsRabbitTemplate.java" as paymentsRabbitTemplate <<(C,#ADD1B2) Publish messages >>
+participant "RabbitMQ" as rabbitMQ
+participant "Kafka" as kafka
+
+box "Actor" #LightSeaGreen
+	actor user
+end box
+
+box "AluraFood Web" #LightBlue
+	participant orderForm
+	participant paymentForm
+end box
+
+box "Order Microservice" #LightGreen
+	participant orderService
+	participant paymentsRabbitListenerOrder
+end box
+
+box "Payment Microservice" #LightGreen
+	participant paymentService
+	participant paymentsRabbitTemplate
+end box
+
+box "Evaluation Microservice" #LightGreen
+	participant paymentsRabbitListenerEvaluation
+end box
+
+box "Message Broker" #DarkOrange
+	participant rabbitMQ
+end box
+
+box "Message Broker" #DarkGray
+	participant kafka
+end box
+
+alt Order Actions
+    user -> orderForm : creatingOrder()
+    orderForm -> orderService : creatingOrder()
+    orderService -> orderForm : HTTP Status 201
+    orderForm -> user : Success created order
+end alt
+
+alt Payment Actions
+    user -> paymentForm : createPayment()
+    paymentForm -> paymentService : createPayment()
+    paymentService -> paymentsRabbitTemplate : sendPaymentsCreated()
+    paymentsRabbitTemplate -> rabbitMQ : Publishing message
+    paymentService -> paymentForm : HTTP Status 201
+    paymentForm -> user : result = Success created payment
+
+    user -> paymentForm : confirmPayment()
+    paymentForm -> paymentService : confirmPayment()
+    paymentService -> paymentsRabbitTemplate : sendPaymentsConfirmed()
+    paymentsRabbitTemplate -> rabbitMQ : Publishing message
+    paymentService -> paymentForm : HTTP Status 200
+    paymentForm -> user : result = Success confirmed payment
+end alt
+
+alt RabbitMQ Actions
+    rabbitMQ -> paymentsRabbitListenerOrder : getPaymentsCreatedMsg()
+    rabbitMQ -> paymentsRabbitListenerOrder : getPaymentsConfirmedMsg()
+    rabbitMQ -> paymentsRabbitListenerEvaluation : getPaymentsConfirmedMsg()
+end alt
+
+@enduml
