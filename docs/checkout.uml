@@ -4,8 +4,8 @@ actor customer as user
 participant "order.js" as orderForm <<Controller for order form>>
 participant "payment.js" as paymentForm <<Controller for payment form>>
 participant "OrderService.java" as orderService <<(C,#ADD1B2) Orders services>>
-participant "PaymentsRabbitListener.java" as paymentsRabbitListenerOrder <<(C,#ADD1B2) Orders services>>
-participant "PaymentsRabbitListener.java" as paymentsRabbitListenerEvaluation <<(C,#ADD1B2) Orders services>>
+participant "PaymentsRabbitListener.java" as paymentsRabbitListenerOrder <<(C,#ADD1B2) Listener messages>>
+participant "PaymentsRabbitListener.java" as paymentsRabbitListenerEvaluation <<(C,#ADD1B2) Listener messages>>
 participant "PaymentService.java" as paymentService <<(C,#ADD1B2) Payment services>>
 participant "PaymentsRabbitTemplate.java" as paymentsRabbitTemplate <<(C,#ADD1B2) Publish messages >>
 participant "RabbitMQ" as rabbitMQ
