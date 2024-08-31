@@ -1,0 +1,120 @@
+@startuml
+
+actor customer as user
+participant "order.js" as orderForm <<(C,#ADD1B2) Order Form Controller>>
+participant "payment.js" as paymentForm <<(C,#ADD1B2) Payment Form Controller>>
+participant "OrderService.java" as orderService <<(C,#ADD1B2) Orders Service>>
+participant "OrderRepository.java" as orderRepository <<(C,#ADD1B2) Orders Repository>>
+participant "PaymentsRabbitListener.java" as paymentsRabbitListenerOrder <<(C,#ADD1B2) Payment Listener Messages>>
+participant "EvaluationService.java" as evaluationService <<(C,#ADD1B2) Evaluation Service>>
+participant "EvaluationRepository.java" as evaluationRepository <<(C,#ADD1B2) Evaluation Repository>>
+participant "OrderClient.java" as orderClient <<(C,#ADD1B2) Order Client>>
+participant "PaymentsRabbitListener.java" as paymentsRabbitListenerEvaluation <<(C,#ADD1B2) Payment Listener Messages>>
+participant "PaymentService.java" as paymentService <<(C,#ADD1B2) Payment Service>>
+participant "PaymentRepository.java" as paymentRepository <<(C,#ADD1B2) Payment Repository>>
+participant "PaymentsRabbitTemplate.java" as paymentsRabbitTemplate <<(C,#ADD1B2) Payment Publish messages >>
+database PostgreSQL as postgres
+queue RabbitMQ as rabbit
+queue Kafka as kaf
+
+box "Actor" #LightSeaGreen
+    participant user
+end box
+
+box "AluraFood Web" #LightBlue
+    participant orderForm
+    participant paymentForm
+end box
+
+box "Order Microservice" #LightGreen
+    participant orderService
+    participant orderRepository
+    participant paymentsRabbitListenerOrder
+end box
+
+box "Payment Microservice" #LightGreen
+    participant paymentService
+    participant paymentRepository
+    participant paymentsRabbitTemplate
+end box
+
+box "Evaluation Microservice" #LightGreen
+    participant evaluationService
+    participant evaluationRepository
+    participant orderClient
+    participant paymentsRabbitListenerEvaluation
+end box
+
+box "Database" #MediumBlue
+    participant postgres
+end box
+
+box "Message Broker" #DarkOrange
+    participant rabbit
+    participant kaf
+end box
+
+
+alt Order Actions
+    user -> orderForm : addOrder()
+    orderForm -> orderService : createOrder()
+    orderService -> orderRepository : save()
+    orderRepository -> postgres : persisting data
+    postgres -> orderRepository : Successful persistence
+    orderRepository -> orderService : Status 201
+    orderService -> orderForm : Status 201
+    orderForm -> user : Successful creating
+end alt
+
+alt Payment Actions
+    user -> paymentForm : effectPayment()
+    paymentForm -> paymentService : createPayment()
+    paymentService -> paymentRepository : save()
+    paymentRepository -> postgres : persisting data
+    postgres -> paymentRepository : Successful persistence
+    paymentRepository -> paymentService : Status 201
+    paymentService -> paymentsRabbitTemplate : sendPaymentsCreated()
+    paymentsRabbitTemplate -> rabbit : Publishing message
+    rabbit -> paymentsRabbitTemplate : message posted
+    paymentsRabbitTemplate -> paymentService : Status 200
+    paymentService -> paymentForm : Status 201
+    paymentForm -> user : result = Successful creating
+
+    user -> paymentForm : confirmPayment()
+    paymentForm -> paymentService : confirmPayment()
+    paymentService -> paymentRepository : save()
+    paymentRepository -> postgres : persisting data
+    postgres -> paymentRepository : Successful update
+    paymentRepository -> paymentService : Status 200
+    paymentService -> paymentsRabbitTemplate : sendPaymentsConfirmed()
+    paymentsRabbitTemplate -> rabbit : Publishing message
+    rabbit -> paymentsRabbitTemplate : message posted
+    paymentsRabbitTemplate -> paymentService : Status 200
+    paymentService -> paymentForm : Status 200
+    paymentForm -> user : result = Successful updating
+end alt
+
+alt RabbitMQ Actions
+    paymentsRabbitListenerOrder -> rabbit : getPaymentsCreatedMsg()
+    rabbit -> paymentsRabbitListenerOrder : if exists message
+end alt
+alt RabbitMQ Actions
+    paymentsRabbitListenerOrder -> rabbit : getPaymentsConfirmedMsg()
+    rabbit -> paymentsRabbitListenerOrder : if exists message
+end alt
+alt RabbitMQ Actions
+    paymentsRabbitListenerEvaluation -> rabbit : getPaymentsConfirmedMsg()
+    rabbit -> paymentsRabbitListenerEvaluation : if exists message
+    paymentsRabbitListenerEvaluation -> evaluationService :createPendingEvaluation()
+    evaluationService -> orderClient : getOrderById()
+    orderClient -> orderService : findById()
+    orderService -> orderClient : Status 200
+    orderClient -> evaluationService : Order Json
+    evaluationService -> evaluationService : Setting Evaluation Status to PENDING and points to 0.0
+    evaluationService -> evaluationRepository : save()
+    evaluationRepository -> postgres : persisting data
+    postgres -> evaluationRepository : Successful persistence
+    evaluationRepository -> evaluationService : Status 201
+    evaluationService -> paymentsRabbitListenerEvaluation : Success
+end alt
+@enduml

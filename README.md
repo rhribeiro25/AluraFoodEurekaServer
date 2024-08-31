@@ -2,4 +2,9 @@
 
 Service registry that plays a central role in the automatic detection of devices and services on a network.
 
-![image](https://github.com/user-attachments/assets/aabac16d-cb23-441f-bf64-3324c005f76b)
+# AluraFood Ecosystem
+![image](https://github.com/user-attachments/assets/9e9952f6-368e-400c-970c-42ff6d9462d3)
+
+# AluraFood Sequence Diagram
+
+![image](docs/checkout.png)
