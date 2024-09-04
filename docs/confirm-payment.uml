@@ -1,5 +1,7 @@
 @startuml
 
+title Confirming payment
+
 actor customer as user
 participant "order.js" as orderForm <<(C,#ADD1B2) Order Form Controller>>
 participant "payment.js" as paymentForm <<(C,#ADD1B2) Payment Form Controller>>
@@ -15,7 +17,6 @@ participant "PaymentRepository.java" as paymentRepository <<(C,#ADD1B2) Payment 
 participant "PaymentsRabbitTemplate.java" as paymentsRabbitTemplate <<(C,#ADD1B2) Payment Publish messages >>
 database PostgreSQL as postgres
 queue RabbitMQ as rabbit
-queue Kafka as kaf
 
 box "Actor" #LightSeaGreen
     participant user
@@ -54,32 +55,7 @@ box "Message Broker" #DarkOrange
     participant kaf
 end box
 
-
-alt Order Actions
-    user -> orderForm : addOrder()
-    orderForm -> orderService : createOrder()
-    orderService -> orderRepository : save()
-    orderRepository -> postgres : persisting data
-    postgres -> orderRepository : Successful persistence
-    orderRepository -> orderService : Status 201
-    orderService -> orderForm : Status 201
-    orderForm -> user : Successful creating
-end alt
-
 alt Payment Actions
-    user -> paymentForm : effectPayment()
-    paymentForm -> paymentService : createPayment()
-    paymentService -> paymentRepository : save()
-    paymentRepository -> postgres : persisting data
-    postgres -> paymentRepository : Successful persistence
-    paymentRepository -> paymentService : Status 201
-    paymentService -> paymentsRabbitTemplate : sendPaymentsCreated()
-    paymentsRabbitTemplate -> rabbit : Publishing message
-    rabbit -> paymentsRabbitTemplate : message posted
-    paymentsRabbitTemplate -> paymentService : Status 200
-    paymentService -> paymentForm : Status 201
-    paymentForm -> user : result = Successful creating
-
     user -> paymentForm : confirmPayment()
     paymentForm -> paymentService : confirmPayment()
     paymentService -> paymentRepository : save()
@@ -94,15 +70,17 @@ alt Payment Actions
     paymentForm -> user : result = Successful updating
 end alt
 
-alt RabbitMQ Actions
-    paymentsRabbitListenerOrder -> rabbit : getPaymentsCreatedMsg()
-    rabbit -> paymentsRabbitListenerOrder : if exists message
-end alt
-alt RabbitMQ Actions
+alt Updating payment data in order microservice by RabbitMQ Actions
     paymentsRabbitListenerOrder -> rabbit : getPaymentsConfirmedMsg()
     rabbit -> paymentsRabbitListenerOrder : if exists message
+    paymentsRabbitListenerOrder -> orderService : updatePaymentStatus()
+    orderService -> orderRepository : save()
+    orderRepository -> postgres : update data
+    postgres -> orderRepository : Successful update
+    orderRepository -> orderService : Status 200
 end alt
-alt RabbitMQ Actions
+
+alt Updating payment data in evaluation microservice by RabbitMQ Actions
     paymentsRabbitListenerEvaluation -> rabbit : getPaymentsConfirmedMsg()
     rabbit -> paymentsRabbitListenerEvaluation : if exists message
     paymentsRabbitListenerEvaluation -> evaluationService :createPendingEvaluation()
@@ -115,6 +93,5 @@ alt RabbitMQ Actions
     evaluationRepository -> postgres : persisting data
     postgres -> evaluationRepository : Successful persistence
     evaluationRepository -> evaluationService : Status 201
-    evaluationService -> paymentsRabbitListenerEvaluation : Success
 end alt
 @enduml

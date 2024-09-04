@@ -1,0 +1,69 @@
+@startuml
+
+title Creating new payment
+
+actor customer as user
+participant "payment.js" as paymentForm <<(C,#ADD1B2) Payment Form Controller>>
+participant "OrderService.java" as orderService <<(C,#ADD1B2) Orders Service>>
+participant "OrderRepository.java" as orderRepository <<(C,#ADD1B2) Orders Repository>>
+participant "PaymentsRabbitListener.java" as paymentsRabbitListenerOrder <<(C,#ADD1B2) Payment Listener Messages>>
+participant "PaymentService.java" as paymentService <<(C,#ADD1B2) Payment Service>>
+participant "PaymentRepository.java" as paymentRepository <<(C,#ADD1B2) Payment Repository>>
+participant "PaymentsRabbitTemplate.java" as paymentsRabbitTemplate <<(C,#ADD1B2) Payment Publish messages >>
+database PostgreSQL as postgres
+queue RabbitMQ as rabbit
+
+box "Actor" #LightSeaGreen
+    participant user
+end box
+
+box "AluraFood Web" #LightBlue
+    participant paymentForm
+end box
+
+box "Order Microservice" #LightGreen
+    participant orderService
+    participant orderRepository
+    participant paymentsRabbitListenerOrder
+end box
+
+box "Payment Microservice" #LightGreen
+    participant paymentService
+    participant paymentRepository
+    participant paymentsRabbitTemplate
+end box
+
+box "Database" #MediumBlue
+    participant postgres
+end box
+
+box "Message Broker" #DarkOrange
+    participant rabbit
+end box
+
+alt Payment Actions
+    user -> paymentForm : effectPayment()
+    paymentForm -> paymentService : createPayment()
+    paymentService -> paymentRepository : save()
+    paymentRepository -> postgres : persisting data
+    postgres -> paymentRepository : Successful persistence
+    paymentRepository -> paymentService : Status 201
+    paymentService -> paymentsRabbitTemplate : sendPaymentsCreated()
+    paymentsRabbitTemplate -> rabbit : Publishing message
+    rabbit -> paymentsRabbitTemplate : message posted
+    paymentsRabbitTemplate -> paymentService : Status 200
+    paymentService -> paymentForm : Status 201
+    paymentForm -> user : result = Successful creating
+end alt
+
+alt RabbitMQ Actions
+    paymentsRabbitListenerOrder -> rabbit : getPaymentsCreatedMsg()
+    rabbit -> paymentsRabbitListenerOrder : if exists message
+    paymentsRabbitListenerOrder -> orderService : updatePaymentStatus()
+    orderService -> orderRepository : save()
+    orderRepository -> postgres : updating data
+    postgres -> orderRepository : Successful update
+    orderRepository -> orderService : Status 200
+end alt
+
+@enduml

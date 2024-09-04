@@ -7,4 +7,6 @@ Service registry that plays a central role in the automatic detection of devices
 
 # AluraFood Sequence Diagram
 
-![image](docs/checkout.png)
+![image](docs/create-order.png)
+![image](docs/create-payment.png)
+![image](docs/confirm-payment.png)

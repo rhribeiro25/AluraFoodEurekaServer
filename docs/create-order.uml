@@ -1,0 +1,39 @@
+@startuml
+
+title Creating new order
+
+actor customer as user
+participant "order.js" as orderForm <<(C,#ADD1B2) Order Form Controller>>
+participant "OrderService.java" as orderService <<(C,#ADD1B2) Orders Service>>
+participant "OrderRepository.java" as orderRepository <<(C,#ADD1B2) Orders Repository>>
+database PostgreSQL as postgres
+
+box "Actor" #LightSeaGreen
+    participant user
+end box
+
+box "AluraFood Web" #LightBlue
+    participant orderForm
+end box
+
+box "Order Microservice" #LightGreen
+    participant orderService
+    participant orderRepository
+end box
+
+box "Database" #MediumBlue
+    participant postgres
+end box
+
+alt Order Actions
+    user -> orderForm : addOrder()
+    orderForm -> orderService : createOrder()
+    orderService -> orderRepository : save()
+    orderRepository -> postgres : persisting data
+    postgres -> orderRepository : Successful created
+    orderRepository -> orderService : Status 201
+    orderService -> orderForm : Status 201
+    orderForm -> user : Successful creating
+end alt
+
+@enduml
