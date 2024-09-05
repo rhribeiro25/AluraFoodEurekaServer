@@ -6,36 +6,43 @@ services:
     container_name: rabbitmq
     restart: always
     ports:
-      - 5672:5672
-      - 15672:15672
+      - "5672:5672"
+      - "15672:15672"
     volumes:
-      - ./dados:/var/lib/rabbitmq/
+      - ./data/rabbitmq:/var/lib/rabbitmq/
     environment:
       - RABBITMQ_DEFAULT_USER=rhribeiro25
       - RABBITMQ_DEFAULT_PASS=alura
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.4
+    image: confluentinc/cp-zookeeper:latest
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - 22181:2181
+      - "2181:2181"
 
   kafka:
-    image: confluentinc/cp-kafka:7.4.4
+    image: confluentinc/cp-kafka:latest
     depends_on:
       - zookeeper
-
     ports:
-      - 29092:29092
+      - "9092:9092"
+    volumes:
+      - ./data/kafka:/var/lib/kafka/data
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+#    command: >
+#      bash -c
+#      "(--topic created-promotion-to-product-topic &) && (supervisord -n)"
 
   postgres-payments:
     image: postgres:14-alpine
@@ -44,11 +51,11 @@ services:
       - POSTGRES_PASSWORD=alura
       - POSTGRES_DB=alurafood-payments
     ports:
-      - 5432:5432
+      - "5432:5432"
     expose:
       - 5432
     volumes:
-      - postgres-payments:/var/lib/postgresql/data
+      - ./data/postgres-payments:/var/lib/postgresql/data
 
   postgres-orders:
     image: postgres:14-alpine
@@ -57,11 +64,11 @@ services:
       - POSTGRES_PASSWORD=alura
       - POSTGRES_DB=alurafood-orders
     ports:
-      - 6432:5432
+      - "6432:5432"
     expose:
       - 6432
     volumes:
-      - postgres-orders:/var/lib/postgresql/data
+      - ./data/postgres-orders:/var/lib/postgresql/data
 
   postgres-promotions:
     image: postgres:14-alpine
@@ -70,11 +77,11 @@ services:
       - POSTGRES_PASSWORD=alura
       - POSTGRES_DB=alurafood-promotions
     ports:
-      - 7432:5432
+      - "7432:5432"
     expose:
       - 7432
     volumes:
-      - postgres-promotions:/var/lib/postgresql/data
+      - ./data/postgres-promotions:/var/lib/postgresql/data
 
   postgres-evaluations:
     image: postgres:14-alpine
@@ -83,13 +90,15 @@ services:
       - POSTGRES_PASSWORD=alura
       - POSTGRES_DB=alurafood-evaluations
     ports:
-      - 8432:5432
+      - "8432:5432"
     expose:
       - 8432
     volumes:
-      - postgres-evaluations:/var/lib/postgresql/data
+      - ./data/postgres-evaluations:/var/lib/postgresql/data
 
 volumes:
+  rabbitmq:
+  kafka:
   postgres-payments:
   postgres-orders:
   postgres-promotions:
